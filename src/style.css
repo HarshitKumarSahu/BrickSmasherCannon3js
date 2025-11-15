@@ -21,7 +21,7 @@
 html, body {
     width: 100%;
     height: 100%;
-    background-color: grey;
+    /* background-color: grey;    */
     font-family: 'Roboto', system-ui, sans-serif;
     /* smoothing the font */
     -webkit-font-smoothing: antialiased;
@@ -40,6 +40,16 @@ img {
     height: 100%;
     object-fit: cover;
     object-position: center;
+}
+
+.webgl {
+    width: 100%;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    outline: none;
+    z-index: 1;
 }
 
 /* Responsive Media Queries (Mobile-First) */

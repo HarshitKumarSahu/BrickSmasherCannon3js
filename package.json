@@ -10,5 +10,11 @@
   },
   "devDependencies": {
     "vite": "^7.2.2"
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "gsap": "^3.13.0",
+    "lil-gui": "^0.21.0",
+    "three": "^0.181.1"
   }
 }
