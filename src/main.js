@@ -143,32 +143,72 @@ const treeDimension = {
         color: '#228B22'
     },
     treeLeaves2: {
-        radius: 1.5,
-        height: 1.5,
+        radius: 0.75,
+        height: 0.75,
         color: "#8CAE26"
     }
 }
 
+// type 1
 const treeTrunk = new THREE.Mesh(
     new THREE.ConeGeometry(treeDimension.trunk.radius, treeDimension.trunk.height),
     new THREE.MeshBasicMaterial({color: treeDimension.trunk.color})
 ) 
 treeTrunk.position.set(0, treeDimension.trunk.height * 0.5, 0)
-trees.add(treeTrunk)
+// trees.add()/
 
 const treeLeaves1 = new THREE.Mesh(
     new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 2.25, treeDimension.treeLeaves.detail),
     new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
 ) 
 treeLeaves1.position.set(0, treeDimension.trunk.height * 0.7, 0)
+
 const treeLeaves2 = new THREE.Mesh(
     new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 1.5, treeDimension.treeLeaves.detail),
     new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
 ) 
 treeLeaves2.position.set(0, treeDimension.trunk.height * 0.95, 0)
-trees.add(treeLeaves1, treeLeaves2)
+// trees.add(treeTrunk, treeLeaves1, treeLeaves2)
 
 
+// type2
+const treeTrunk1 = new THREE.Mesh(
+    new THREE.ConeGeometry(treeDimension.trunk.radius, treeDimension.trunk.height),
+    new THREE.MeshBasicMaterial({color: treeDimension.trunk.color})
+) 
+treeTrunk1.position.set(0, treeDimension.trunk.height * 0.5, 0)
+
+const treeLeaves21 = new THREE.Mesh(
+    new THREE.ConeGeometry(treeDimension.treeLeaves2.radius, treeDimension.treeLeaves2.height ),
+    new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
+) 
+treeLeaves21.position.set(0, treeDimension.trunk.height * 0.65, 0)
+
+const treeLeaves22 = new THREE.Mesh(
+    new THREE.ConeGeometry(treeDimension.treeLeaves2.radius * 0.75, treeDimension.treeLeaves2.height * 0.75),
+    new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
+) 
+treeLeaves22.position.set(0, treeDimension.trunk.height * 0.85, 0)
+
+const treeLeaves23 = new THREE.Mesh(
+    new THREE.ConeGeometry(treeDimension.treeLeaves2.radius * 0.5, treeDimension.treeLeaves2.height * 0.5),
+    new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
+) 
+treeLeaves23.position.set(0, treeDimension.trunk.height * 1, 0)
+// trees.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
+
+const tree1 = new THREE.Group()
+const tree2 = new THREE.Group()
+const tree3 = new THREE.Group()
+const tree4 = new THREE.Group()
+
+trees.add(tree1, tree2, tree3, tree4)
+
+tree1.add(treeTrunk, treeLeaves1, treeLeaves2)
+tree1.position.set(0, 0, 0)
+
+tree2.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
+tree2.position.set(1, 0, 0)
 /**
  * Lights
  */
