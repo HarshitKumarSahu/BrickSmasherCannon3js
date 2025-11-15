@@ -66,8 +66,9 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  * Groups
  */
 const arena = new THREE.Group()
+const trees = new THREE.Group()
 
-scene.add(arena)
+scene.add(arena, trees)
 
 /**
  * Arena
@@ -126,6 +127,46 @@ wall4.rotation.y = Math.PI * 0.5
 
 arena.add(floor, wall1, wall2, wall3, wall4)
 
+
+/**
+ * Trees
+ */
+const treeDimension = {
+    trunk: {
+        radius: 0.175,
+        height: 2,
+        color: '#6C3815'
+    },
+    treeLeaves: {
+        radius: 0.25,
+        detail: 1,
+        color: '#228B22'
+    },
+    treeLeaves2: {
+        radius: 1.5,
+        height: 1.5,
+        color: "#8CAE26"
+    }
+}
+
+const treeTrunk = new THREE.Mesh(
+    new THREE.ConeGeometry(treeDimension.trunk.radius, treeDimension.trunk.height),
+    new THREE.MeshBasicMaterial({color: treeDimension.trunk.color})
+) 
+treeTrunk.position.set(0, treeDimension.trunk.height * 0.5, 0)
+trees.add(treeTrunk)
+
+const treeLeaves1 = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 2.25, treeDimension.treeLeaves.detail),
+    new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
+) 
+treeLeaves1.position.set(0, treeDimension.trunk.height * 0.7, 0)
+const treeLeaves2 = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 1.5, treeDimension.treeLeaves.detail),
+    new THREE.MeshBasicMaterial({color: treeDimension.treeLeaves.color})
+) 
+treeLeaves2.position.set(0, treeDimension.trunk.height * 0.95, 0)
+trees.add(treeLeaves1, treeLeaves2)
 
 
 /**
