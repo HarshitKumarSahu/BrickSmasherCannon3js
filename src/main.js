@@ -204,11 +204,32 @@ const tree4 = new THREE.Group()
 
 trees.add(tree1, tree2, tree3, tree4)
 
-tree1.add(treeTrunk, treeLeaves1, treeLeaves2)
+// tree1.add(treeTrunk, treeLeaves1, treeLeaves2)
 tree1.position.set(0, 0, 0)
 
-tree2.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
+// tree2.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
 tree2.position.set(1, 0, 0)
+
+/**
+ * Rocks
+ */
+const rocks = new THREE.Group()
+scene.add(rocks)
+
+const rockDimension = {
+    radius: 1,
+    detail: 0,
+    color: "#808080"
+}
+
+const rock1 = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(rockDimension.radius * (Math.random() + 0.5), rockDimension.detail),
+    new THREE.MeshBasicMaterial( { color: rockDimension.color } )
+)
+
+rocks.add(rock1)
+
+
 /**
  * Lights
  */
