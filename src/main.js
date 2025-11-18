@@ -67,8 +67,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
  */
 const arena = new THREE.Group()
 const trees = new THREE.Group()
+const rocks = new THREE.Group()
+const car = new THREE.Group()
 
-scene.add(arena, trees)
+scene.add(arena, trees, rocks)
 
 /**
  * Arena
@@ -132,6 +134,14 @@ arena.add(floor, wall1, wall2, wall3, wall4)
 
 
 /**
+ * 
+ *
+ * ENVIRONMENT
+ * 
+ * 
+ */
+
+/**
  * Trees
  */
 const treeDimension = {
@@ -159,7 +169,8 @@ const treeDimension = {
         color1: "#228b22",
         color2: "#007101",
         color3: "#005700"
-    }
+    },
+    count: 20,
 }
 
 // --- Tree Type 1 Definition (Icosahedron leaves) 
@@ -234,17 +245,15 @@ const CreateTreeType2Template = () => {
 
 const GenerateTrees = (createTreeTemplateFn, targetGroup, n) => {
     for (let i = 0; i < n; i++) {
-        // Position randomization
-        const angle = Math.random() * Math.PI * 2
-        const radius =  Math.random() * 24
-        const x = Math.sin(angle) * radius
-        const z = Math.cos(angle) * radius
-        
         // Create a fresh instance of the tree group
         const tree = createTreeTemplateFn();
         
         // Apply position and slight random rotation for natural look
-        tree.position.set(x, Math.random() * 0.15, z)
+        tree.position.set(
+            (Math.random()-0.5) * 48.5, 
+            0, 
+            (Math.random()-0.5) * 48.5  // Inside 50x50 arena
+        )
         tree.rotation.set(
             0,
             Math.random() * Math.PI * 2, // Rotate around Y axis randomly
@@ -254,83 +263,10 @@ const GenerateTrees = (createTreeTemplateFn, targetGroup, n) => {
     }
 }
 
-GenerateTrees(CreateTreeType1Template, trees, 10);
-GenerateTrees(CreateTreeType2Template, trees, 10);
-
-
-// // type 1
-// const treeTrunk = new THREE.Mesh(
-//     new THREE.ConeGeometry(treeDimension.trunk.radius, treeDimension.trunk.height, treeDimension.trunk.radialSegment),
-//     new THREE.MeshLambertMaterial({color: treeDimension.trunk.color})
-// ) 
-// treeTrunk.position.set(0, treeDimension.trunk.height * 0.5, 0)
-// // trees.add()/
-
-// const treeLeaves1 = new THREE.Mesh(
-//      new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 2.25, treeDimension.treeLeaves.detail),
-//     new THREE.MeshLambertMaterial({color: treeDimension.treeLeaves.color})
-// ) 
-// treeLeaves1.position.set(0, treeDimension.trunk.height * 0.7, 0)
-
-// const treeLeaves2 = new THREE.Mesh(
-//     new THREE.IcosahedronGeometry(treeDimension.treeLeaves.radius * 1.5, treeDimension.treeLeaves.detail),
-//     new THREE.MeshLambertMaterial({color: treeDimension.treeLeaves.color})
-// )
-// treeLeaves2.position.set(0, treeDimension.trunk.height * 0.95, 0)
-
-// // type2
-// const treeTrunk1 = new THREE.Mesh(
-//     new THREE.ConeGeometry(treeDimension.trunk.radius, treeDimension.trunk.height, treeDimension.trunk.radialSegment),
-//     new THREE.MeshLambertMaterial({color: treeDimension.trunk.color})
-// ) 
-// treeTrunk1.position.set(0, treeDimension.trunk.height * 0.5, 0)
-
-// const treeLeaves21 = new THREE.Mesh(
-//     new THREE.ConeGeometry(treeDimension.treeLeaves2.radius, treeDimension.treeLeaves2.height, treeDimension.treeLeaves2.radialSegment),
-//     new THREE.MeshLambertMaterial({color: treeDimension.treeLeaves.color})
-// ) 
-// treeLeaves21.position.set(0, treeDimension.trunk.height * 0.65, 0)
-
-// const treeLeaves22 = new THREE.Mesh(
-//     new THREE.ConeGeometry(treeDimension.treeLeaves2.radius * 0.75, treeDimension.treeLeaves2.height * 0.75, treeDimension.treeLeaves2.radialSegment),
-//     new THREE.MeshLambertMaterial({color: treeDimension.treeLeaves.color})
-// ) 
-// treeLeaves22.position.set(0, treeDimension.trunk.height * 0.85, 0)
-
-// const treeLeaves23 = new THREE.Mesh(
-//     new THREE.ConeGeometry(treeDimension.treeLeaves2.radius * 0.5, treeDimension.treeLeaves2.height * 0.5, treeDimension.treeLeaves2.radialSegment),
-//     new THREE.MeshLambertMaterial({color: treeDimension.treeLeaves.color})
-// ) 
-// treeLeaves23.position.set(0, treeDimension.trunk.height * 1, 0)
-// // trees.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
-
-// const tree1 = new THREE.Group()
-// const tree2 = new THREE.Group()
-// const tree3 = new THREE.Group()
-// const tree4 = new THREE.Group()
-
-// trees.add(tree1, tree2)
-
-// tree1.add(treeTrunk, treeLeaves1, treeLeaves2)
-// tree1.position.set(0, 0, 0)
-
-// tree2.add(treeTrunk1, treeLeaves21, treeLeaves22, treeLeaves23)
-// tree2.position.set(1, 0, 0)
-
-
-
-
-
-
-
-
 
 /**
  * Rocks
  */
-const rocks = new THREE.Group()
-scene.add(rocks)
-
 const rockDimension = {
     radius: 0.5,
     detail: 0,
@@ -339,17 +275,16 @@ const rockDimension = {
 }
 
 const rockGeo = new THREE.DodecahedronGeometry(rockDimension.radius * (Math.random() + 0.5), rockDimension.detail)
-const rockMat = new THREE.MeshLambertMaterial( { color: rockDimension.color, metalness: 0.2 } )
+const rockMat = new THREE.MeshLambertMaterial( { color: rockDimension.color} )
 
 const GenerateRocks = (geometer, material, n) => {
     for (let i = 0; i < n; i++) {
-        const angle = Math.random() * Math.PI * 2
-        const radius =  Math.random() * 24
-        const x = Math.sin(angle) * radius
-        const z = Math.cos(angle) * radius
-        // console.log(x, z);
         const rock = new THREE.Mesh(geometer, material)
-        rock.position.set(x, Math.random() * 0.15, z)
+        rock.position.set(
+            (Math.random()-0.5) * 48.5, 
+            Math.random() * 0.15, 
+            (Math.random()-0.5) * 48.5  // Inside 50x50 arena
+        )
         rock.rotation.set(
             (Math.random() - 0.5) * 0.4,
             (Math.random() - 0.5) * 0.4,
@@ -358,18 +293,10 @@ const GenerateRocks = (geometer, material, n) => {
         rocks.add(rock)
     }
 }
-GenerateRocks(rockGeo, rockMat, rockDimension.count)
 
-
-
-// const rock1 = new THREE.Mesh(
-//     new THREE.DodecahedronGeometry(rockDimension.radius * (Math.random() + 0.5), rockDimension.detail),
-//     new THREE.MeshBasicMaterial( { color: "orange" } )
-// )
-
-// rocks.add(rock1)
-
-
+// GenerateTrees(CreateTreeType1Template, trees, treeDimension.count);
+// GenerateTrees(CreateTreeType2Template, trees, treeDimension.count);
+// GenerateRocks(rockGeo, rockMat, rockDimension.count)
 
 /**
  * Lights
