@@ -173,7 +173,7 @@ const treeDimension = {
         color2: "#007101",
         color3: "#005700"
     },
-    count: 20,
+    count: 25,
 }
 
 // --- Tree Type 1 Definition (Icosahedron leaves) 
@@ -245,26 +245,69 @@ const CreateTreeType2Template = () => {
     return treeGroup;
 };
 
+const fixedTrees = [
+    { x: -23.543, y: 0.000, z: -11.237, rotY: 4.936 },
+    { x: 19.877, y: 0.000, z: 10.360, rotY: 1.336 },
+    { x: 7.621, y: 0.000, z: 7.142, rotY: 5.236 },
+    { x: 17.699, y: 0.000, z: -10.112, rotY: 5.219 },
+    { x: -16.836, y: 0.000, z: -5.560, rotY: 5.049 },
+    { x: 12.376, y: 0.000, z: -11.986, rotY: 5.592 },
+    { x: 2.681, y: 0.000, z: 9.414, rotY: 5.911 },
+    { x: -13.454, y: 0.000, z: 2.336, rotY: 2.920 },
+    { x: -1.742, y: 0.000, z: 21.303, rotY: 5.357 },
+    { x: 1.740, y: 0.000, z: 4.939, rotY: 5.096 },
+    { x: 9.986, y: 0.000, z: -5.879, rotY: 5.817 },
+    { x: -22.955, y: 0.000, z: 16.822, rotY: 2.552 },
+    { x: 11.787, y: 0.000, z: 8.789, rotY: 0.906 },
+    { x: 22.926, y: 0.000, z: -15.366, rotY: 5.269 },
+    { x: -1.177, y: 0.000, z: -6.949, rotY: 6.099 },
+    { x: -1.617, y: 0.000, z: 7.199, rotY: 4.056 },
+    { x: -5.024, y: 0.000, z: -7.833, rotY: 2.151 },
+    { x: -16.541, y: 0.000, z: 21.151, rotY: 0.541 },
+    { x: -23.565, y: 0.000, z: 8.038, rotY: 5.635 },
+    { x: 11.337, y: 0.000, z: 5.224, rotY: 5.430 },
+    { x: 6.894, y: 0.000, z: -14.969, rotY: 0.712 },
+    { x: -20.350, y: 0.000, z: -17.312, rotY: 4.857 },
+    { x: -8.245, y: 0.000, z: -17.388, rotY: 2.303 },
+    { x: 6.639, y: 0.000, z: 5.944, rotY: 5.805 },
+    { x: -6.000, y: 0.000, z: 3.087, rotY: 2.650 },
+    { x: 3.472, y: 0.000, z: 4.718, rotY: 6.123 },
+    { x: -8.104, y: 0.000, z: 2.431, rotY: 1.646 },
+    { x: -13.279, y: 0.000, z: -7.193, rotY: 1.420 },
+    { x: 14.147, y: 0.000, z: -2.708, rotY: 0.659 },
+    { x: 20.468, y: 0.000, z: 4.384, rotY: 4.550 },
+    { x: 21.582, y: 0.000, z: 0.212, rotY: 2.964 },
+    { x: 10.132, y: 0.000, z: 22.861, rotY: 1.880 },
+    { x: -22.637, y: 0.000, z: -2.349, rotY: 4.205 },
+    { x: -10.063, y: 0.000, z: -21.639, rotY: 6.115 },
+    { x: -3.684, y: 0.000, z: -10.782, rotY: 2.440 },
+    { x: 13.811, y: 0.000, z: -6.136, rotY: 4.516 },
+    { x: 14.168, y: 0.000, z: 18.518, rotY: 2.644 },
+    { x: 12.623, y: 0.000, z: -23.618, rotY: 4.726 },
+    { x: -1.739, y: 0.000, z: 7.059, rotY: 4.111 },
+    { x: -20.480, y: 0.000, z: -16.075, rotY: 0.204 },
+    { x: -2.649, y: 0.000, z: -6.100, rotY: 3.404 },
+    { x: 20.197, y: 0.000, z: -10.453, rotY: 2.987 },
+    { x: -1.532, y: 0.000, z: 8.394, rotY: 0.371 },
+    { x: 5.512, y: 0.000, z: -9.133, rotY: 3.928 },
+    { x: -13.147, y: 0.000, z: -18.664, rotY: 1.877 },
+    { x: 11.166, y: 0.000, z: 19.076, rotY: 2.456 },
+    { x: -1.336, y: 0.000, z: 14.635, rotY: 3.185 },
+    { x: -0.171, y: 0.000, z: -21.113, rotY: 6.191 },
+    { x: 12.305, y: 0.000, z: 2.382, rotY: 6.013 },
+    { x: 10.132, y: 0.000, z: -22.580, rotY: 2.731 },
+  ];
+  
+fixedTrees.forEach(pos => {
+    const tree = Math.random() < 0.5 ? CreateTreeType1Template() : CreateTreeType2Template();
+    tree.position.set(pos.x, pos.y, pos.z);
+    tree.rotation.y = pos.rotY;
+    trees.add(tree);
+});
+  
 
-const GenerateTrees = (createTreeTemplateFn, targetGroup, n) => {
-    for (let i = 0; i < n; i++) {
-        // Create a fresh instance of the tree group
-        const tree = createTreeTemplateFn();
-        
-        // Apply position and slight random rotation for natural look
-        tree.position.set(
-            (Math.random()-0.5) * 48.5, 
-            0, 
-            (Math.random()-0.5) * 48.5  // Inside 50x50 arena
-        )
-        tree.rotation.set(
-            0,
-            Math.random() * Math.PI * 2, // Rotate around Y axis randomly
-            0
-        )
-        targetGroup.add(tree);
-    }
-}
+
+
 
 
 /**
@@ -274,36 +317,47 @@ const rockDimension = {
     radius: 0.5,
     detail: 0,
     color: "#95955f",
-    count: 20
+    count: 25
 }
 
 const rockGeo = new THREE.DodecahedronGeometry(rockDimension.radius * (Math.random() + 0.5), rockDimension.detail)
 const rockMat = new THREE.MeshLambertMaterial( { color: rockDimension.color} )
 
-const GenerateRocks = (geometer, material, n) => {
-    for (let i = 0; i < n; i++) {
-        const rock = new THREE.Mesh(geometer, material)
-        rock.position.set(
-            (Math.random()-0.5) * 48.5, 
-            Math.random() * 0.15, 
-            (Math.random()-0.5) * 48.5  // Inside 50x50 arena
-        )
-        rock.rotation.set(
-            (Math.random() - 0.5) * 0.4,
-            (Math.random() - 0.5) * 0.4,
-            (Math.random() - 0.5) * 0.4
-        )
-        rocks.add(rock)
-    }
-}
-
-GenerateTrees(CreateTreeType1Template, trees, treeDimension.count);
-GenerateTrees(CreateTreeType2Template, trees, treeDimension.count);
-GenerateRocks(rockGeo, rockMat, rockDimension.count)
-
-
-
-
+const fixedRocks = [
+    { x: -12.649, y: 0.114, z: -14.998, rotX: -0.161, rotY: 0.198, rotZ: 0.098 },
+    { x: 0.592, y: 0.122, z: 17.238, rotX: 0.059, rotY: -0.037, rotZ: -0.184 },
+    { x: 13.511, y: 0.065, z: 3.047, rotX: 0.041, rotY: -0.074, rotZ: 0.083 },
+    { x: 5.066, y: 0.064, z: 8.441, rotX: -0.196, rotY: 0.153, rotZ: -0.145 },
+    { x: -16.585, y: 0.074, z: 9.855, rotX: 0.174, rotY: 0.020, rotZ: -0.116 },
+    { x: 8.038, y: 0.108, z: 14.577, rotX: -0.160, rotY: -0.082, rotZ: -0.032 },
+    { x: 7.775, y: 0.146, z: -16.327, rotX: -0.052, rotY: -0.128, rotZ: -0.058 },
+    { x: -24.230, y: 0.034, z: 17.235, rotX: -0.046, rotY: -0.081, rotZ: -0.106 },
+    { x: 18.939, y: 0.027, z: 15.687, rotX: 0.189, rotY: 0.132, rotZ: 0.069 },
+    { x: 2.403, y: 0.039, z: 19.388, rotX: -0.132, rotY: 0.126, rotZ: -0.188 },
+    { x: -5.213, y: 0.054, z: 4.087, rotX: 0.180, rotY: 0.121, rotZ: 0.047 },
+    { x: 19.761, y: 0.019, z: -17.028, rotX: -0.197, rotY: 0.034, rotZ: 0.186 },
+    { x: -18.665, y: 0.128, z: 17.291, rotX: -0.105, rotY: 0.016, rotZ: 0.196 },
+    { x: -10.498, y: 0.071, z: 14.440, rotX: -0.162, rotY: 0.163, rotZ: -0.009 },
+    { x: -22.261, y: 0.114, z: -6.482, rotX: -0.122, rotY: -0.135, rotZ: 0.124 },
+    { x: -23.441, y: 0.034, z: -17.148, rotX: 0.087, rotY: 0.143, rotZ: -0.073 },
+    { x: -10.328, y: 0.065, z: 3.859, rotX: 0.031, rotY: -0.104, rotZ: -0.090 },
+    { x: -7.612, y: 0.076, z: -15.163, rotX: 0.020, rotY: -0.151, rotZ: -0.144 },
+    { x: 15.152, y: 0.146, z: -10.894, rotX: -0.190, rotY: -0.128, rotZ: -0.050 },
+    { x: -5.591, y: 0.145, z: 3.850, rotX: -0.099, rotY: 0.172, rotZ: 0.172 },
+    { x: 19.566, y: 0.094, z: 13.983, rotX: -0.030, rotY: -0.130, rotZ: 0.088 },
+    { x: 5.071, y: 0.059, z: 10.230, rotX: -0.092, rotY: -0.066, rotZ: -0.107 },
+    { x: 5.420, y: 0.123, z: -11.357, rotX: -0.004, rotY: 0.035, rotZ: 0.120 },
+    { x: -14.674, y: 0.140, z: 18.216, rotX: 0.017, rotY: 0.132, rotZ: -0.147 },
+    { x: -0.492, y: 0.009, z: -19.967, rotX: -0.161, rotY: 0.032, rotZ: 0.009 },
+];
+  
+fixedRocks.forEach(pos => {
+    const rock = new THREE.Mesh(rockGeo, rockMat);
+    rock.position.set(pos.x, pos.y, pos.z);
+    rock.rotation.set(pos.rotX, pos.rotY, pos.rotZ);
+    rock.castShadow = true;
+    rocks.add(rock);
+});
 
 
 
@@ -567,32 +621,167 @@ car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.t
 
 
 
+const BRICK = {
+    w: 0.575,
+    h: 0.275,
+    d: 0.2775,
+    color: 0xc1440e,
+    roughness: 0.8,
+    metalness: 0.1
+};
+
+const brickGeo = new THREE.BoxGeometry(BRICK.w, BRICK.h, BRICK.d);
+const brickMat = new THREE.MeshStandardMaterial({
+    color: BRICK.color,
+    roughness: BRICK.roughness,
+    metalness: BRICK.metalness
+});
+
+/**
+ * Helper: Add a single brick with slight randomness (wobble + rotation)
+ */
+function addBrick(scene, x, y, z) {
+    const brick = new THREE.Mesh(brickGeo, brickMat);
+    
+    brick.position.set(
+        x + (Math.random() - 0.5) * 0.03,
+        y + BRICK.h / 2,
+        z + (Math.random() - 0.5) * 0.03
+    );
+    
+    // Tiny random rotation for realism
+    brick.rotation.y = (Math.random() - 0.5) * 0.2;
+    brick.rotation.x = (Math.random() - 0.5) * 0.05;
+    brick.rotation.z = (Math.random() - 0.5) * 0.05;
+    
+    brick.castShadow = true;
+    brick.receiveShadow = true;
+    
+    scene.add(brick);
+    return brick;
+}
+
+/**
+ * PYRAMID (30 bricks)
+ */
+export function createPyramid(scene, centerX = 0, centerZ = 0) {
+    const bricks = [];
+    const steps = 7;
+    let currentStep = steps;
+  
+    for (let row = 0; row < steps; row++) {
+        const y = row * BRICK.h;
+        const brickCount = currentStep;
+        const totalWidth = brickCount * BRICK.w;
+        const startX = centerX - totalWidth / 2 + BRICK.w / 2;
+    
+        // Stagger every row (running bond)
+        const stagger = (row % 2 === 1) ? BRICK.w / 2 : 0;
+    
+        for (let i = 0; i < brickCount; i++) {
+            const x = startX + i * BRICK.w + stagger;
+            const z = centerZ + (Math.random() - 0.5) * 0.02; // tiny depth variation
+    
+            bricks.push(addBrick(scene, x, y, z));
+        }
+        currentStep--;
+    }
+  
+    return bricks; // 28 bricks — perfect size
+  }
+
+/**
+ * TALL TOWER with staggered bond (should use 48 bricks but old logic made 60)
+ */
+function createTower(scene, x = 0, z = 0) {
+    const bricks = [];
+    const width = 4;      // how many bricks per row (even rows)
+    const height = 12;    // how many rows total
+
+    // The target is 48 bricks: 12 rows × 4 bricks per row
+    for (let row = 0; row < height; row++) {
+        const isOdd = row % 2 === 1;
+        // Always place 4 bricks per row (stagger by shifting bricks in odd rows)
+        for (let i = 0; i < width; i++) {
+            // Center the tower around x, offset odd rows for staggered bond
+            const offset = isOdd ? BRICK.w / 2 : 0;
+            const px = x - ((width - 1) * BRICK.w / 2) + i * BRICK.w + offset;
+            bricks.push(addBrick(scene, px, row * BRICK.h, z));
+        }
+    }
+    return bricks;
+}
+
+/**
+ *. ZIGZAG / LIGHTNING WALL (38 bricks)
+ */
+function createZigzag(scene, startX = 0, startZ = 0) {
+    const bricks = [];
+    const segments = 6 + Math.floor(Math.random() * 2);
+    let x = startX;
+    let z = startZ;
+    let dir = 1; // 1 = right, -1 = left
+
+    for (let s = 0; s < segments; s++) {
+        const height = 4 + (s % 3);
+        for (let h = 0; h < height; h++) {
+            for (let w = 0; w < 2; w++) {
+                bricks.push(addBrick(scene,
+                x + w * BRICK.w,
+                h * BRICK.h,
+                z
+                ));
+            }
+        }
+        // Move diagonally
+        x += dir * 2 * BRICK.w;
+        z += BRICK.d * 3;
+        dir *= -1; // zigzag
+    }
+    return bricks;
+}
+
+createPyramid(scene, 1, -15); 
+createZigzag(scene, 15, -20);
+createTower(scene, -8, 10); 
+createPyramid(scene, -8, -4);
+createZigzag(scene, 13, 11); 
+createTower(scene, -17, -19);
+createZigzag(scene, -19, 11); 
 
 
+/**
+ * LOG CURRENT POSITIONS — Run once, copy output, then delete this function!
+ */
+function logCurrentLayout() {
+    console.log("%c=== PERMANENT LAYOUT DATA (Copy this!) ===", "color: cyan; font-weight: bold;");
+  
+    // Log Trees
+    console.log("%cTREES:", "color: green; font-weight: bold;");
+    trees.children.forEach((tree, i) => {
+      console.log(`{ x: ${tree.position.x.toFixed(3)}, y: ${tree.position.y.toFixed(3)}, z: ${tree.position.z.toFixed(3)}, rotY: ${tree.rotation.y.toFixed(3)} },`);
+    });
+  
+    // Log Rocks
+    console.log("%cROCKS:", "color: orange; font-weight: bold;");
+    rocks.children.forEach((rock, i) => {
+      console.log(`{ x: ${rock.position.x.toFixed(3)}, y: ${rock.position.y.toFixed(3)}, z: ${rock.position.z.toFixed(3)}, rotX: ${rock.rotation.x.toFixed(3)}, rotY: ${rock.rotation.y.toFixed(3)}, rotZ: ${rock.rotation.z.toFixed(3)} },`);
+    });
+  
+    // Log Brick Walls (Pyramid, Tower, Zigzag)
+    console.log("%cBRICK WALLS (call positions):", "color: red; font-weight: bold;");
+    console.log(`createPyramid(scene, -5, 0);`);
+    console.log(`createTower(scene, -8, 10);`);
+    console.log(`createZigzag(scene, 10, 5);`);
+    console.log(`createPyramid(scene, -15, -5);`);
+    console.log(`createTower(scene, 1, -15);`);
+    console.log(`createZigzag(scene, 18, -10);`);
+  
+    console.log("%c=== COPY EVERYTHING ABOVE AND REPLACE RANDOM GENERATION ===", "color: cyan; font-weight: bold;");
+}
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+logCurrentLayout()
 
 
 /**
@@ -600,7 +789,7 @@ car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.t
  */
 
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.4)  // Soft fill
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.975)
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2)
 directionalLight.position.set(10, 20, 5)
 directionalLight.shadow.mapSize.width = 2048  // Crisp shadows
 const hemisphereLight = new THREE.HemisphereLight(0x87CEEB, 0x228B22, 0.6)  // Sky/ground bounce
@@ -621,7 +810,8 @@ wall3.castShadow = true
 wall4.castShadow = true
 
 floor.receiveShadow = true 
-
+mainBody.castShadow = true
+roof.castShadow = true
 
 /**
  * Animate
