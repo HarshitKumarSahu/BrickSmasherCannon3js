@@ -619,8 +619,9 @@ car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.t
 
 
 
-
-
+/**
+ * Bricks – Now with GROUPS! Rotate once, all bricks follow
+ */
 const BRICK = {
     w: 0.575,
     h: 0.275,
@@ -638,18 +639,17 @@ const brickMat = new THREE.MeshStandardMaterial({
 });
 
 /**
- * Helper: Add a single brick with slight randomness (wobble + rotation)
+ * Helper: Add brick to a group (no randomness on group level)
  */
-function addBrick(scene, x, y, z) {
+function addBrickToGroup(group, localX, localY, localZ) {
     const brick = new THREE.Mesh(brickGeo, brickMat);
     
     brick.position.set(
-        x + (Math.random() - 0.5) * 0.03,
-        y + BRICK.h / 2,
-        z + (Math.random() - 0.5) * 0.03
+        localX + (Math.random() - 0.5) * 0.03,
+        localY + BRICK.h / 2,
+        localZ + (Math.random() - 0.5) * 0.03
     );
     
-    // Tiny random rotation for realism
     brick.rotation.y = (Math.random() - 0.5) * 0.2;
     brick.rotation.x = (Math.random() - 0.5) * 0.05;
     brick.rotation.z = (Math.random() - 0.5) * 0.05;
@@ -657,97 +657,113 @@ function addBrick(scene, x, y, z) {
     brick.castShadow = true;
     brick.receiveShadow = true;
     
-    scene.add(brick);
+    group.add(brick);
     return brick;
 }
 
 /**
- * PYRAMID (30 bricks)
+ * PYRAMID – Now returns a rotatable group!
  */
-export function createPyramid(scene, centerX = 0, centerZ = 0) {
-    const bricks = [];
+export function createPyramid(scene, centerX = 0, centerZ = 0, rotationY = 0) {
+    const pyramidGroup = new THREE.Group();
     const steps = 7;
     let currentStep = steps;
-  
+
     for (let row = 0; row < steps; row++) {
         const y = row * BRICK.h;
         const brickCount = currentStep;
         const totalWidth = brickCount * BRICK.w;
-        const startX = centerX - totalWidth / 2 + BRICK.w / 2;
-    
-        // Stagger every row (running bond)
+        const startX = -totalWidth / 2 + BRICK.w / 2;
         const stagger = (row % 2 === 1) ? BRICK.w / 2 : 0;
-    
+
         for (let i = 0; i < brickCount; i++) {
-            const x = startX + i * BRICK.w + stagger;
-            const z = centerZ + (Math.random() - 0.5) * 0.02; // tiny depth variation
-    
-            bricks.push(addBrick(scene, x, y, z));
+            const localX = startX + i * BRICK.w + stagger;
+            const localZ = 0;
+            addBrickToGroup(pyramidGroup, localX, y, localZ);
         }
         currentStep--;
     }
-  
-    return bricks; // 28 bricks — perfect size
-  }
 
-/**
- * TALL TOWER with staggered bond (should use 48 bricks but old logic made 60)
- */
-function createTower(scene, x = 0, z = 0) {
-    const bricks = [];
-    const width = 4;      // how many bricks per row (even rows)
-    const height = 12;    // how many rows total
+    // Position + rotate the entire group
+    pyramidGroup.position.set(centerX, 0, centerZ);
+    pyramidGroup.rotation.y = rotationY;
 
-    // The target is 48 bricks: 12 rows × 4 bricks per row
-    for (let row = 0; row < height; row++) {
-        const isOdd = row % 2 === 1;
-        // Always place 4 bricks per row (stagger by shifting bricks in odd rows)
-        for (let i = 0; i < width; i++) {
-            // Center the tower around x, offset odd rows for staggered bond
-            const offset = isOdd ? BRICK.w / 2 : 0;
-            const px = x - ((width - 1) * BRICK.w / 2) + i * BRICK.w + offset;
-            bricks.push(addBrick(scene, px, row * BRICK.h, z));
-        }
-    }
-    return bricks;
+    scene.add(pyramidGroup);
+    return pyramidGroup; // You can now rotate/move it anytime!
 }
 
 /**
- *. ZIGZAG / LIGHTNING WALL (38 bricks)
+ * TALL TOWER – Group version
  */
-function createZigzag(scene, startX = 0, startZ = 0) {
-    const bricks = [];
-    const segments = 6 + Math.floor(Math.random() * 2);
-    let x = startX;
-    let z = startZ;
-    let dir = 1; // 1 = right, -1 = left
+export function createTower(scene, centerX = 0, centerZ = 0, rotationY = 0) {
+    const towerGroup = new THREE.Group();
+    const width = 4;
+    const height = 12;
+
+    for (let row = 0; row < height; row++) {
+        const isOdd = row % 2 === 1;
+41;
+        const offset = isOdd ? BRICK.w / 2 : 0;
+
+        for (let i = 0; i < width; i++) {
+            const localX = -((width - 1) * BRICK.w / 2) + i * BRICK.w + offset;
+            const localZ = 0;
+            addBrickToGroup(towerGroup, localX, row * BRICK.h, localZ);
+        }
+    }
+
+    towerGroup.position.set(centerX, 0, centerZ);
+    towerGroup.rotation.y = rotationY;
+    scene.add(towerGroup);
+    return towerGroup;
+}
+
+/**
+ * ZIGZAG – Group version
+ */
+export function createZigzag(scene, startX = 0, startZ = 0, rotationY = 0) {
+    const zigzagGroup = new THREE.Group();
+    const segments = 7;
+    let x = 0;
+    let z = 0;
+    let dir = 1;
 
     for (let s = 0; s < segments; s++) {
         const height = 4 + (s % 3);
         for (let h = 0; h < height; h++) {
             for (let w = 0; w < 2; w++) {
-                bricks.push(addBrick(scene,
-                x + w * BRICK.w,
-                h * BRICK.h,
-                z
-                ));
+                addBrickToGroup(zigzagGroup, x + w * BRICK.w, h * BRICK.h, z);
             }
         }
-        // Move diagonally
         x += dir * 2 * BRICK.w;
         z += BRICK.d * 3;
-        dir *= -1; // zigzag
+        dir *= -1;
     }
-    return bricks;
+
+    zigzagGroup.position.set(startX, 0, startZ);
+    zigzagGroup.rotation.y = rotationY;
+    scene.add(zigzagGroup);
+    return zigzagGroup;
 }
 
 createPyramid(scene, 1, -15); 
-createZigzag(scene, 15, -20);
+createZigzag(scene, 15, -20, Math.PI / 6);
 createTower(scene, -8, 10); 
-createPyramid(scene, -8, -4);
-createZigzag(scene, 13, 11); 
-createTower(scene, -17, -19);
-createZigzag(scene, -19, 11); 
+createPyramid(scene, -9, -3, Math.PI / 4);
+createZigzag(scene, 14, 11, -Math.PI * 0.25); 
+createTower(scene, -17.5, -19, Math.PI * 0.15);
+createZigzag(scene, -19, 13, Math.PI * 0.25); 
+
+
+
+
+
+
+
+
+
+
+
 
 
 /**
@@ -779,9 +795,25 @@ function logCurrentLayout() {
   
     console.log("%c=== COPY EVERYTHING ABOVE AND REPLACE RANDOM GENERATION ===", "color: cyan; font-weight: bold;");
 }
+// logCurrentLayout()  
 
 
-logCurrentLayout()
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Fog
+ */
+scene.fog = new THREE.FogExp2(0xe8b923, 0.0975);
 
 
 /**
@@ -821,7 +853,7 @@ const timer = new Timer()
 const tick = () => {
     timer.update()
     const elapsedTime = timer.getElapsed()
-    // console.log(elapsedTime)
+    const deltaTime = timer.getDelta();  // Use your timer!
 
     controls.update()
 
