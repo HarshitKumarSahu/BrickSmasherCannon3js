@@ -2,6 +2,8 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { Timer } from 'three/src/core/Timer.js'
 
+import * as CANNON from 'cannon-es'
+
 import GUI from 'lil-gui'
 import { gsap } from 'gsap'
 
@@ -16,6 +18,12 @@ import { gsap } from 'gsap'
 const gui = new GUI()
 const canvas = document.querySelector('canvas.webgl')
 const scene = new THREE.Scene()
+
+// Create physics world
+const world = new CANNON.World()
+world.gravity.set(0, -9.82, 0);
+world.broadphase = new CANNON.NaiveBroadphase()
+world.solver.iterations = 10;
 
 
 /**
@@ -72,6 +80,14 @@ const car = new THREE.Group()
 
 scene.add(arena, trees, rocks, car)
 
+
+
+
+
+
+
+
+
 /**
  * Arena
  */
@@ -79,14 +95,16 @@ const arenaDimension = {
     floor: {
         width: 50,
         height: 50,
-        color: "#ffd886"
+        color: "#ffd886",
+        mass: 0
     },
     walls: {
         width: 50,
-        height: 5,
+        height: 50,
         depth: 0.25,
         // color: '#F5883B',
-        color: "#d9a152"
+        color: "#d9a152",
+        mass: 0
     }
 }
 
@@ -134,6 +152,76 @@ arena.add(
     wall3, 
     wall4
 )
+
+// Floor physics (holds everything)
+const floorShape = new CANNON.Plane()
+const floorBody = new CANNON.Body({
+    mass: arenaDimension.floor.mass
+})
+floorBody.addShape(floorShape)
+floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);  // Rotate flat
+floorBody.position.set(0, 0, 0);
+
+// Wall 1 (North)
+const wall1Shape = new CANNON.Box(new CANNON.Vec3(arenaDimension.walls.width * 0.5, arenaDimension.walls.height * 0.5, arenaDimension.walls.depth * 0.5));  // Half-extents
+const wall1Body = new CANNON.Body({ mass: 0 });
+wall1Body.addShape(wall1Shape);
+wall1Body.position.set(0, 1.5, -25);
+
+// Wall 2 (South)
+const wall2Shape = new CANNON.Box(new CANNON.Vec3(arenaDimension.walls.width * 0.5, arenaDimension.walls.height * 0.5, arenaDimension.walls.depth * 0.5));
+const wall2Body = new CANNON.Body({ mass: 0 });
+wall2Body.addShape(wall2Shape);
+wall2Body.position.set(0, 1.5, 25);
+
+// Wall 3 (East) - rotated
+const wall3Shape = new CANNON.Box(new CANNON.Vec3(arenaDimension.walls.width * 0.5, arenaDimension.walls.height * 0.5, arenaDimension.walls.depth * 0.5));
+const wall3Body = new CANNON.Body({ mass: 0 });
+wall3Body.addShape(wall3Shape);
+wall3Body.position.set(25, 1.5, 0);
+wall3Body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), Math.PI / 2);
+
+// Wall 4 (West) - rotated
+const wall4Shape = new CANNON.Box(new CANNON.Vec3(arenaDimension.walls.width * 0.5, arenaDimension.walls.height * 0.5, arenaDimension.walls.depth * 0.5));
+const wall4Body = new CANNON.Body({ mass: 0 });
+wall4Body.addShape(wall4Shape);
+wall4Body.position.set(-25, 1.5, 0);
+wall4Body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), -Math.PI / 2);
+
+// === SYNC VISUAL MESHES TO PHYSICS (in tick loop) ===
+function syncArena() {
+    floor.position.copy(floorBody.position);
+    floor.quaternion.copy(floorBody.quaternion);
+    
+    wall1.position.copy(wall1Body.position);
+    wall1.quaternion.copy(wall1Body.quaternion);
+    
+    wall2.position.copy(wall2Body.position);
+    wall2.quaternion.copy(wall2Body.quaternion);
+    
+    wall3.position.copy(wall3Body.position);
+    wall3.quaternion.copy(wall3Body.quaternion);
+    
+    wall4.position.copy(wall4Body.position);
+    wall4.quaternion.copy(wall4Body.quaternion);
+}
+
+
+
+world.addBody(
+    floorBody,
+    wall1Body,
+    wall2Body,
+    wall3Body,
+    wall4Body
+);
+
+
+
+
+
+
+
 
 
 /**
@@ -436,7 +524,7 @@ const carDimension = {
             tubeSeg: 128, 
             radSeg: 16, 
             p: 8, 
-            q: 9,
+            q: 5,
             color: "#a2af9f"
         }
     }
@@ -855,6 +943,11 @@ const tick = () => {
     const elapsedTime = timer.getElapsed()
     const deltaTime = timer.getDelta();  // Use your timer!
 
+    // Physics
+    world.step(1/60, deltaTime, 3);  // Fixed timeStep
+    syncArena();  // Sync arena meshes
+
+    // orbit control
     controls.update()
 
     renderer.render(scene, camera)
