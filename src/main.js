@@ -262,6 +262,7 @@ const treeDimension = {
         color3: "#005700"
     },
     count: 25,
+    mass: 0,
 }
 
 // --- Tree Type 1 Definition (Icosahedron leaves) 
@@ -393,7 +394,25 @@ fixedTrees.forEach(pos => {
     trees.add(tree);
 });
   
+// Tree Physics
+trees.children.forEach(tree => {
+    // Each tree is a Group → we make a simple cylinder for trunk + sphere for leaves
+    const trunkShape = new CANNON.Cylinder(0.18, 0.18, 2, 8);           // radiusTop, radiusBottom, height, segments
+    const leavesShape = new CANNON.Sphere(1.2);                        // radius big enough for leaves
 
+    const treeBody = new CANNON.Body({ mass: treeDimension.mass });  // Static
+    treeBody.addShape(trunkShape, new CANNON.Vec3(0, 1, 0));           // trunk offset up
+    treeBody.addShape(leavesShape, new CANNON.Vec3(0, 2.8, 0));        // leaves at top
+
+    // Copy position & rotation from visual tree
+    treeBody.position.copy(tree.position);
+    treeBody.quaternion.copy(tree.quaternion);
+
+    world.addBody(treeBody);
+
+    // Optional: store reference so we can sync later (not needed for static)
+    tree.userData.physicsBody = treeBody;
+});
 
 
 
@@ -405,7 +424,8 @@ const rockDimension = {
     radius: 0.5,
     detail: 0,
     color: "#95955f",
-    count: 25
+    count: 25,
+    mass: 0
 }
 
 const rockGeo = new THREE.DodecahedronGeometry(rockDimension.radius * (Math.random() + 0.5), rockDimension.detail)
@@ -447,7 +467,18 @@ fixedRocks.forEach(pos => {
     rocks.add(rock);
 });
 
+rocks.children.forEach(rock => {
+    const radius = rock.geometry.parameters.radius * rock.scale.x * 1.075; // slightly bigger
+    const rockShape = new CANNON.Sphere(radius);
 
+    const rockBody = new CANNON.Body({ mass: rockDimension.mass });
+    rockBody.addShape(rockShape);
+    rockBody.position.copy(rock.position);
+    rockBody.quaternion.copy(rock.quaternion);
+
+    world.addBody(rockBody);
+    rock.userData.physicsBody = rockBody;
+});
 
 
 
@@ -704,6 +735,158 @@ car.add(
 )
 car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.tyre.radius), 0)
 
+// === INPUT KEYS (WASD + Space) ===
+const keys = {
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+    space: false
+};
+
+// Key down
+window.addEventListener('keydown', (e) => {
+    switch (e.code) {
+        case 'KeyW': case 'ArrowUp':    keys.w = true; break;
+        case 'KeyS': case 'ArrowDown':  keys.s = true; break;
+        case 'KeyA': case 'ArrowLeft':  keys.a = true; break;
+        case 'KeyD': case 'ArrowRight': keys.d = true; break;
+        case 'Space': keys.space = true; e.preventDefault(); break;
+    }
+});
+
+// Key up
+window.addEventListener('keyup', (e) => {
+    switch (e.code) {
+        case 'KeyW': case 'ArrowUp':    keys.w = false; break;
+        case 'KeyS': case 'ArrowDown':  keys.s = false; break;
+        case 'KeyA': case 'ArrowLeft':  keys.a = false; break;
+        case 'KeyD': case 'ArrowRight': keys.d = false; break;
+        case 'Space': keys.space = false; break;
+    }
+});
+
+
+// === CAR PHYSICS: RaycastVehicle (FINAL FIXED VERSION) ===
+
+// Chassis physics body
+const chassisShape = new CANNON.Box(new CANNON.Vec3(
+    carDimension.mainBody.width / 2,
+    carDimension.mainBody.height / 2,
+    carDimension.mainBody.depth / 2
+));
+
+const chassisBody = new CANNON.Body({
+    mass: 800,
+    shape: chassisShape,
+    position: new CANNON.Vec3(0, 1, 0)  // Start above ground
+});
+world.addBody(chassisBody);
+
+// Create RaycastVehicle
+const vehicle = new CANNON.RaycastVehicle({
+    chassisBody: chassisBody
+});
+
+// Wheel options
+const wheelOptions = {
+    radius: carDimension.wheel.tyre.radius + 0.02,
+    height: carDimension.wheel.tyre.height,
+    suspensionStiffness: 45,
+    suspensionRestLength: 0.4,
+    frictionSlip: 6,
+    dampingRelaxation: 2.3,
+    dampingCompression: 4.4,
+    maxSuspensionForce: 200000,
+    rollInfluence: 0.01,
+    axleLocal: new CANNON.Vec3(-1, 0, 0),     // Left-right
+    directionLocal: new CANNON.Vec3(0, -1, 0), // Down
+    chassisConnectionPointLocal: new CANNON.Vec3(),
+    maxSuspensionTravel: 0.3,
+    customSlidingRotationalSpeed: -30,
+    useCustomSlidingRotationalSpeed: true
+};
+
+// Add 4 wheels with correct positions
+const wheelMeshes = [wheelOne, wheelTwo, wheelThree, wheelFour];
+
+[
+    [ carDimension.mainBody.width * 0.35,  -carDimension.mainBody.depth * 0.45],  // Front Left
+    [-carDimension.mainBody.width * 0.35,  -carDimension.mainBody.depth * 0.45],  // Front Right
+    [ carDimension.mainBody.width * 0.35,   carDimension.mainBody.depth * 0.45],  // Rear Left
+    [-carDimension.mainBody.width * 0.35,   carDimension.mainBody.depth * 0.45]   // Rear Right
+].forEach((pos, i) => {
+    vehicle.addWheel(wheelOptions);
+    vehicle.wheelInfos[i].chassisConnectionPointLocal.set(pos[0], -0.3, pos[1]);
+});
+
+vehicle.addToWorld(world);
+
+// === INPUT KEYS (already in your code) — keep it exactly as is ===
+// (You already have this — perfect)
+
+// === CAR CONTROLS ===
+const MAX_STEER = 0.6;
+const ENGINE_POWER = 1400;
+const BRAKE_POWER = 100;
+
+function updateCarControls() {
+    const forwardForce = keys.w ? ENGINE_POWER : 0;
+    const reverseForce = keys.s ? -ENGINE_POWER * 0.6 : 0;
+    const brakeForce = keys.s ? BRAKE_POWER : 0;
+
+    // Speed-based steering
+    const speed = chassisBody.velocity.length();
+    const steerAmount = MAX_STEER * Math.max(0.3, 1 - speed / 60);
+
+    const steerLeft  = keys.a ? steerAmount : 0;
+    const steerRight = keys.d ? -steerAmount : 0;
+
+    // Apply forces
+    vehicle.applyEngineForce(forwardForce + reverseForce, 2);
+    vehicle.applyEngineForce(forwardForce + reverseForce, 3); // Rear wheels
+    vehicle.setBrake(brakeForce, 0);
+    vehicle.setBrake(brakeForce, 1);
+    vehicle.setBrake(brakeForce, 2);
+    vehicle.setBrake(brakeForce, 3);
+
+    vehicle.setSteeringValue(steerLeft + steerRight, 0);  // Front wheels
+    vehicle.setSteeringValue(steerLeft + steerRight, 1);
+
+    // JUMP (Space)
+    if (keys.space && vehicle.numWheelsOnGround >= 3) {
+        chassisBody.applyImpulse(new CANNON.Vec3(0, 1200, 0), chassisBody.position);
+        keys.space = false; // Prevent spam
+    }
+}
+
+// === SYNC CAR + WHEELS ===
+function syncCar() {
+    // Sync main car body
+    car.position.copy(chassisBody.position);
+    car.quaternion.copy(chassisBody.quaternion);
+
+    // Sync each wheel
+    for (let i = 0; i < vehicle.wheelInfos.length; i++) {
+        const wheelInfo = vehicle.wheelInfos[i];
+        const wheelMesh = wheelMeshes[i];
+
+        vehicle.updateWheelTransform(i);
+        const t = wheelInfo.worldTransform;
+
+        wheelMesh.position.copy(t.position);
+        wheelMesh.quaternion.copy(t.quaternion);
+
+        // Spin tyre visually
+        wheelMesh.children[0].rotation.x -= wheelInfo.engineForce * 0.02;
+    }
+}
+
+
+
+
+
+
 
 
 
@@ -716,7 +899,10 @@ const BRICK = {
     d: 0.2775,
     color: 0xc1440e,
     roughness: 0.8,
-    metalness: 0.1
+    metalness: 0.1,
+    mass: 8,           // Heavy enough to fly nicely when hit
+    friction: 0.6,
+    restitution: 0.3 // Bounciness
 };
 
 const brickGeo = new THREE.BoxGeometry(BRICK.w, BRICK.h, BRICK.d);
@@ -843,8 +1029,46 @@ createTower(scene, -17.5, -19, Math.PI * 0.15);
 createZigzag(scene, -19, 13, Math.PI * 0.25); 
 
 
+// Bricks Physics
+// Helper: Convert one visual brick → physics body
+function makeBrickPhysical(visualBrick) {
+    const shape = new CANNON.Box(
+        new CANNON.Vec3(BRICK.w/2, BRICK.h/2, BRICK.d/2)  // half-extents!
+    );
 
+    const body = new CANNON.Body({
+        mass: BRICK.mass,
+        shape: shape,
+        material: new CANNON.Material({
+            friction: BRICK.friction,
+            restitution: BRICK.restitution
+        })
+    });
 
+    // Copy position + rotation from visual mesh
+    body.position.copy(visualBrick.position);
+    body.quaternion.copy(visualBrick.quaternion);
+
+    world.addBody(body);
+    visualBrick.userData.physicsBody = body;  // Link them!
+}
+
+// Loop through ALL bricks (pyramids, towers, zigzags) and make them physical
+scene.traverse((object) => {
+    if (object.isMesh && object.geometry === brickGeo) {  // Only our bricks!
+        makeBrickPhysical(object);
+    }
+});
+
+function syncBricks() {
+    scene.traverse((object) => {
+        if (object.isMesh && object.geometry === brickGeo && object.userData.physicsBody) {
+            const body = object.userData.physicsBody;
+            object.position.copy(body.position);
+            object.quaternion.copy(body.quaternion);
+        }
+    });
+}
 
 
 
@@ -933,6 +1157,32 @@ floor.receiveShadow = true
 mainBody.castShadow = true
 roof.castShadow = true
 
+
+
+
+// physics optimizations
+world.addEventListener('postStep', () => {
+    world.bodies.forEach(body => {
+        if (body.sleepState !== CANNON.Body.SLEEPING && 
+            body.velocity.lengthSquared() < 0.1 && 
+            body.angularVelocity.lengthSquared() < 0.1) {
+            body.sleep();
+        }
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 /**
  * Animate
  */
@@ -943,9 +1193,13 @@ const tick = () => {
     const elapsedTime = timer.getElapsed()
     const deltaTime = timer.getDelta();  // Use your timer!
 
+    updateCarControls();  // Apply inputs
+
     // Physics
     world.step(1/60, deltaTime, 3);  // Fixed timeStep
     syncArena();  // Sync arena meshes
+    syncBricks(); // Sync bricks meshes
+    syncCar(); // Sync car meshes
 
     // orbit control
     controls.update()
