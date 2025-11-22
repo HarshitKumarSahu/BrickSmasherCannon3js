@@ -21,7 +21,7 @@ const scene = new THREE.Scene()
 
 // Create physics world
 const world = new CANNON.World()
-world.gravity.set(0, -9.82, 0);
+world.gravity.set(0, -9.85, 0);
 world.broadphase = new CANNON.NaiveBroadphase()
 world.solver.iterations = 10;
 
@@ -735,154 +735,6 @@ car.add(
 )
 car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.tyre.radius), 0)
 
-// === INPUT KEYS (WASD + Space) ===
-const keys = {
-    w: false,
-    a: false,
-    s: false,
-    d: false,
-    space: false
-};
-
-// Key down
-window.addEventListener('keydown', (e) => {
-    switch (e.code) {
-        case 'KeyW': case 'ArrowUp':    keys.w = true; break;
-        case 'KeyS': case 'ArrowDown':  keys.s = true; break;
-        case 'KeyA': case 'ArrowLeft':  keys.a = true; break;
-        case 'KeyD': case 'ArrowRight': keys.d = true; break;
-        case 'Space': keys.space = true; e.preventDefault(); break;
-    }
-});
-
-// Key up
-window.addEventListener('keyup', (e) => {
-    switch (e.code) {
-        case 'KeyW': case 'ArrowUp':    keys.w = false; break;
-        case 'KeyS': case 'ArrowDown':  keys.s = false; break;
-        case 'KeyA': case 'ArrowLeft':  keys.a = false; break;
-        case 'KeyD': case 'ArrowRight': keys.d = false; break;
-        case 'Space': keys.space = false; break;
-    }
-});
-
-
-// === CAR PHYSICS: RaycastVehicle (FINAL FIXED VERSION) ===
-
-// Chassis physics body
-const chassisShape = new CANNON.Box(new CANNON.Vec3(
-    carDimension.mainBody.width / 2,
-    carDimension.mainBody.height / 2,
-    carDimension.mainBody.depth / 2
-));
-
-const chassisBody = new CANNON.Body({
-    mass: 800,
-    shape: chassisShape,
-    position: new CANNON.Vec3(0, 1, 0)  // Start above ground
-});
-world.addBody(chassisBody);
-
-// Create RaycastVehicle
-const vehicle = new CANNON.RaycastVehicle({
-    chassisBody: chassisBody
-});
-
-// Wheel options
-const wheelOptions = {
-    radius: carDimension.wheel.tyre.radius + 0.02,
-    height: carDimension.wheel.tyre.height,
-    suspensionStiffness: 45,
-    suspensionRestLength: 0.4,
-    frictionSlip: 6,
-    dampingRelaxation: 2.3,
-    dampingCompression: 4.4,
-    maxSuspensionForce: 200000,
-    rollInfluence: 0.01,
-    axleLocal: new CANNON.Vec3(-1, 0, 0),     // Left-right
-    directionLocal: new CANNON.Vec3(0, -1, 0), // Down
-    chassisConnectionPointLocal: new CANNON.Vec3(),
-    maxSuspensionTravel: 0.3,
-    customSlidingRotationalSpeed: -30,
-    useCustomSlidingRotationalSpeed: true
-};
-
-// Add 4 wheels with correct positions
-const wheelMeshes = [wheelOne, wheelTwo, wheelThree, wheelFour];
-
-[
-    [ carDimension.mainBody.width * 0.35,  -carDimension.mainBody.depth * 0.45],  // Front Left
-    [-carDimension.mainBody.width * 0.35,  -carDimension.mainBody.depth * 0.45],  // Front Right
-    [ carDimension.mainBody.width * 0.35,   carDimension.mainBody.depth * 0.45],  // Rear Left
-    [-carDimension.mainBody.width * 0.35,   carDimension.mainBody.depth * 0.45]   // Rear Right
-].forEach((pos, i) => {
-    vehicle.addWheel(wheelOptions);
-    vehicle.wheelInfos[i].chassisConnectionPointLocal.set(pos[0], -0.3, pos[1]);
-});
-
-vehicle.addToWorld(world);
-
-// === INPUT KEYS (already in your code) — keep it exactly as is ===
-// (You already have this — perfect)
-
-// === CAR CONTROLS ===
-const MAX_STEER = 0.6;
-const ENGINE_POWER = 1400;
-const BRAKE_POWER = 100;
-
-function updateCarControls() {
-    const forwardForce = keys.w ? ENGINE_POWER : 0;
-    const reverseForce = keys.s ? -ENGINE_POWER * 0.6 : 0;
-    const brakeForce = keys.s ? BRAKE_POWER : 0;
-
-    // Speed-based steering
-    const speed = chassisBody.velocity.length();
-    const steerAmount = MAX_STEER * Math.max(0.3, 1 - speed / 60);
-
-    const steerLeft  = keys.a ? steerAmount : 0;
-    const steerRight = keys.d ? -steerAmount : 0;
-
-    // Apply forces
-    vehicle.applyEngineForce(forwardForce + reverseForce, 2);
-    vehicle.applyEngineForce(forwardForce + reverseForce, 3); // Rear wheels
-    vehicle.setBrake(brakeForce, 0);
-    vehicle.setBrake(brakeForce, 1);
-    vehicle.setBrake(brakeForce, 2);
-    vehicle.setBrake(brakeForce, 3);
-
-    vehicle.setSteeringValue(steerLeft + steerRight, 0);  // Front wheels
-    vehicle.setSteeringValue(steerLeft + steerRight, 1);
-
-    // JUMP (Space)
-    if (keys.space && vehicle.numWheelsOnGround >= 3) {
-        chassisBody.applyImpulse(new CANNON.Vec3(0, 1200, 0), chassisBody.position);
-        keys.space = false; // Prevent spam
-    }
-}
-
-// === SYNC CAR + WHEELS ===
-function syncCar() {
-    // Sync main car body
-    car.position.copy(chassisBody.position);
-    car.quaternion.copy(chassisBody.quaternion);
-
-    // Sync each wheel
-    for (let i = 0; i < vehicle.wheelInfos.length; i++) {
-        const wheelInfo = vehicle.wheelInfos[i];
-        const wheelMesh = wheelMeshes[i];
-
-        vehicle.updateWheelTransform(i);
-        const t = wheelInfo.worldTransform;
-
-        wheelMesh.position.copy(t.position);
-        wheelMesh.quaternion.copy(t.quaternion);
-
-        // Spin tyre visually
-        wheelMesh.children[0].rotation.x -= wheelInfo.engineForce * 0.02;
-    }
-}
-
-
 
 
 
@@ -976,7 +828,6 @@ export function createTower(scene, centerX = 0, centerZ = 0, rotationY = 0) {
 
     for (let row = 0; row < height; row++) {
         const isOdd = row % 2 === 1;
-41;
         const offset = isOdd ? BRICK.w / 2 : 0;
 
         for (let i = 0; i < width; i++) {
@@ -1045,12 +896,25 @@ function makeBrickPhysical(visualBrick) {
         })
     });
 
-    // Copy position + rotation from visual mesh
-    body.position.copy(visualBrick.position);
-    body.quaternion.copy(visualBrick.quaternion);
+    // Get WORLD position and rotation (bricks are in groups!)
+    const worldPos = new THREE.Vector3();
+    const worldQuat = new THREE.Quaternion();
+    visualBrick.getWorldPosition(worldPos);
+    visualBrick.getWorldQuaternion(worldQuat);
+    
+    // Copy WORLD position + rotation to physics body
+    body.position.set(worldPos.x, worldPos.y, worldPos.z);
+    body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+    
+    // Ensure brick starts at rest
+    body.velocity.set(0, 0, 0);
+    body.angularVelocity.set(0, 0, 0);
 
     world.addBody(body);
     visualBrick.userData.physicsBody = body;  // Link them!
+    
+    // Store parent reference for local position calculation
+    visualBrick.userData.parentGroup = visualBrick.parent;
 }
 
 // Loop through ALL bricks (pyramids, towers, zigzags) and make them physical
@@ -1064,8 +928,33 @@ function syncBricks() {
     scene.traverse((object) => {
         if (object.isMesh && object.geometry === brickGeo && object.userData.physicsBody) {
             const body = object.userData.physicsBody;
-            object.position.copy(body.position);
-            object.quaternion.copy(body.quaternion);
+            const parentGroup = object.userData.parentGroup;
+            
+            // Get world position from physics
+            const worldPos = new THREE.Vector3(body.position.x, body.position.y, body.position.z);
+            const worldQuat = new THREE.Quaternion(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
+            
+            // Convert world position back to local (if in a group)
+            if (parentGroup && parentGroup !== scene) {
+                const parentWorldPos = new THREE.Vector3();
+                const parentWorldQuat = new THREE.Quaternion();
+                parentGroup.getWorldPosition(parentWorldPos);
+                parentGroup.getWorldQuaternion(parentWorldQuat);
+                
+                // Calculate local position relative to parent
+                const localPos = worldPos.clone().sub(parentWorldPos);
+                localPos.applyQuaternion(parentWorldQuat.clone().invert());
+                object.position.copy(localPos);
+                
+                // Calculate local rotation relative to parent
+                const invParentQuat = parentWorldQuat.clone().invert();
+                const localQuat = invParentQuat.multiply(worldQuat);
+                object.quaternion.copy(localQuat);
+            } else {
+                // Not in a group, use world position directly
+                object.position.copy(worldPos);
+                object.quaternion.copy(worldQuat);
+            }
         }
     });
 }
@@ -1175,6 +1064,167 @@ world.addEventListener('postStep', () => {
 
 
 
+// === CRITICAL: WHEEL MESH ORDER (MATCHES PHYSICS INDEX) ===
+const wheelMeshes = [
+    wheelThree,  // 0 → Front Left
+    wheelFour,   // 1 → Front Right  
+    wheelOne,    // 2 → Rear Left
+    wheelTwo     // 3 → Rear Right
+];
+
+// === PHYSICS: CHASSIS ===
+const chassisShape = new CANNON.Box(new CANNON.Vec3(
+    carDimension.mainBody.width / 2,
+    carDimension.mainBody.height / 2,
+    carDimension.mainBody.depth / 2
+));
+
+const chassisBody = new CANNON.Body({
+    mass: 800,
+    shape: chassisShape,
+    position: new CANNON.Vec3(0, carDimension.mainBody.height * 0.5 + carDimension.wheel.tyre.radius, 0)
+});
+
+chassisBody.angularDamping = 0.7;
+chassisBody.linearDamping = 0.05;
+
+world.addBody(chassisBody);
+
+// === RAYCAST VEHICLE ===
+const vehicle = new CANNON.RaycastVehicle({
+    chassisBody,
+    // These make the car behave like a real car
+    slidingFriction: 0.5,
+    slidingFrictionStiffness: 30
+});
+
+// === WHEEL OPTIONS (official cannon-es demo style) ===
+const wheelOptions = {
+    radius: carDimension.wheel.tyre.radius + 0.015,
+    height: carDimension.wheel.tyre.height,
+    suspensionStiffness: 45,
+    suspensionRestLength: 0.42,
+    frictionSlip: 5.5,
+    dampingRelaxation: 3.5,
+    dampingCompression: 5.0,
+    maxSuspensionForce: 200000,
+    rollInfluence: 0.01,
+    axleLocal: new CANNON.Vec3(0, 0, 1),        // Z = left/right
+    directionLocal: new CANNON.Vec3(0, -1, 0),   // Down
+    chassisConnectionPointLocal: new CANNON.Vec3(),
+    maxSuspensionTravel: 0.3,
+    customSlidingRotationalSpeed: -30,
+    useCustomSlidingRotationalSpeed: true
+};
+
+// === ADD 4 WHEELS — CORRECT POSITIONS FOR YOUR -X FORWARD CAR ===
+[
+    { x: -0.45, z:  0.4125 },   // Front Left
+    { x: -0.45, z: -0.4125 },   // Front Right
+    { x:  0.45, z:  0.4125 },   // Rear Left
+    { x:  0.45, z: -0.4125 }    // Rear Right
+].forEach((pos, i) => {
+    vehicle.addWheel(wheelOptions);
+    vehicle.wheelInfos[i].chassisConnectionPointLocal.set(
+        pos.x,
+        -carDimension.mainBody.height * 0.5,
+        pos.z
+    );
+});
+
+vehicle.addToWorld(world);
+
+// === INPUTS (your code is perfect) ===
+// keys.w, keys.a, etc — keep exactly as you have
+
+// === FINAL CAR CONTROLS — THIS IS THE GOLD ===
+// Based on official cannon-es demo + your -X forward orientation
+const MAX_FORCE = 2200;
+const MAX_STEER = 0.55;
+const BRAKE_FORCE = 1000000;
+
+let keysPressed = { w: false, s: false, a: false, d: false, space: false };
+
+window.addEventListener('keydown', e => {
+    if (e.code === 'KeyW') keysPressed.w = true;
+    if (e.code === 'KeyS') keysPressed.s = true;
+    if (e.code === 'KeyA') keysPressed.a = true;
+    if (e.code === 'KeyD') keysPressed.d = true;
+    if (e.code === 'Space') { keysPressed.space = true; e.preventDefault(); }
+});
+window.addEventListener('keyup', e => {
+    if (e.code === 'KeyW') keysPressed.w = false;
+    if (e.code === 'KeyS') keysPressed.s = false;
+    if (e.code === 'KeyA') keysPressed.a = false;
+    if (e.code === 'KeyD') keysPressed.d = false;
+    if (e.code === 'Space') keysPressed.space = false;
+});
+
+function updateCarControls() {
+    // Forward = -X → negative force on rear wheels
+    const force = keysPressed.w ? -MAX_FORCE : (keysPressed.s ? MAX_FORCE * 0.7 : 0);
+
+    // Apply engine force to REAR wheels only (2 and 3)
+    vehicle.applyEngineForce(force, 2);
+    vehicle.applyEngineForce(force, 3);
+    vehicle.applyEngineForce(0, 0);
+    vehicle.applyEngineForce(0, 1);
+
+    // Steering — A = left → negative steer
+    const steer = keysPressed.a ? MAX_STEER : (keysPressed.d ? -MAX_STEER : 0);
+    vehicle.setSteeringValue(steer, 0);
+    vehicle.setSteeringValue(steer, 1);
+
+    // Brake
+    const brake = keysPressed.space ? BRAKE_FORCE : 0;
+    vehicle.setBrake(brake, 0);
+    vehicle.setBrake(brake, 1);
+    vehicle.setBrake(brake, 2);
+    vehicle.setBrake(brake, 3);
+
+    // Jump
+    if (keysPressed.space && vehicle.numWheelsOnGround >= 3) {
+        chassisBody.applyImpulse(new CANNON.Vec3(0, 3200, 0), chassisBody.position);
+        keysPressed.space = false;
+    }
+}
+
+// === SYNC CAR & WHEELS (PERFECTED) ===
+function syncCar() {
+    car.position.copy(chassisBody.position);
+    car.quaternion.copy(chassisBody.quaternion);
+
+    for (let i = 0; i < vehicle.wheelInfos.length; i++) {
+        vehicle.updateWheelTransform(i);
+        const t = vehicle.wheelInfos[i].worldTransform;
+        const wheelMesh = wheelMeshes[i];
+
+        const pos = new THREE.Vector3(t.position.x, t.position.y, t.position.z);
+        const quat = new THREE.Quaternion(t.quaternion.x, t.quaternion.y, t.quaternion.z, t.quaternion.w);
+
+        // To local space
+        pos.sub(car.position);
+        pos.applyQuaternion(car.quaternion.clone().invert());
+        const localQuat = car.quaternion.clone().invert().multiply(quat);
+
+        // Base 90° rotation + correct spin
+        const baseRot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2);
+        wheelMesh.quaternion.copy(localQuat.premultiply(baseRot));
+        wheelMesh.position.copy(pos);
+
+        // Spin tyre (reverse direction because forward = -X)
+        // const spinSpeed = -vehicle.wheelInfos[i].engineForce * 0.025;
+        // wheelMesh.children[0].rotation.y += spinSpeed;
+    }
+}
+
+
+
+
+
+
+
+
 
 
 
@@ -1184,22 +1234,30 @@ world.addEventListener('postStep', () => {
 
 
 /**
- * Animate
- */
+* Animate
+*/
 const timer = new Timer()
+
+// Initial sync before first frame to prevent explosions
+function initialSync() {
+    syncArena();
+    syncCar();
+    syncBricks();
+}
 
 const tick = () => {
     timer.update()
     const elapsedTime = timer.getElapsed()
     const deltaTime = timer.getDelta();  // Use your timer!
 
+    // Physics - use fixed timestep for stability
+    const fixedTimeStep = 1/60;
+    world.step(fixedTimeStep, deltaTime, 3);
+    
     updateCarControls();  // Apply inputs
-
-    // Physics
-    world.step(1/60, deltaTime, 3);  // Fixed timeStep
     syncArena();  // Sync arena meshes
-    syncBricks(); // Sync bricks meshes
     syncCar(); // Sync car meshes
+    syncBricks(); // Sync bricks meshes
 
     // orbit control
     controls.update()
@@ -1207,5 +1265,8 @@ const tick = () => {
     renderer.render(scene, camera)
     window.requestAnimationFrame(tick)
 }
+
+// Do initial sync before starting animation
+initialSync();
 
 tick()
