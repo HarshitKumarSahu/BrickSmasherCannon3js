@@ -471,7 +471,7 @@ car.position.set(0, (carDimension.mainBody.height * 0.5) + (carDimension.wheel.t
  */
 const BRICK = {
     w: 0.575, h: 0.275, d: 0.2775, color: 0xc1440e,
-    roughness: 0.8, metalness: 0.1, mass: 8, friction: 0.6, restitution: 0.3
+    roughness: 0.8, metalness: 0.1, mass: 1.5, friction: 0.25, restitution: 0.2
 };
 const brickGeo = new THREE.BoxGeometry(BRICK.w, BRICK.h, BRICK.d);
 const brickMat = new THREE.MeshStandardMaterial({
@@ -646,9 +646,9 @@ const wheelMeshes = [wheelThree, wheelFour, wheelOne, wheelTwo]; // FL, FR, RL, 
 
 const chassisShape = new CANNON.Box(new CANNON.Vec3(carDimension.mainBody.width / 2, carDimension.mainBody.height / 2, carDimension.mainBody.depth / 2));
 const chassisBody = new CANNON.Body({
-    mass: 800,
+    mass: 1000,
     shape: chassisShape,
-    position: new CANNON.Vec3(0, carDimension.mainBody.height * 0.5 + carDimension.wheel.tyre.radius, 0)
+    position: new CANNON.Vec3(0, carDimension.mainBody.height * 0.75 + carDimension.wheel.tyre.radius, 0)
 });
 chassisBody.angularDamping = 0.7;
 chassisBody.linearDamping = 0.05;
@@ -664,7 +664,7 @@ const wheelOptions = {
     radius: carDimension.wheel.tyre.radius + 0.015,
     height: carDimension.wheel.tyre.height,
     suspensionStiffness: 45,
-    suspensionRestLength: 0.42,
+    suspensionRestLength: 0.15,
     frictionSlip: 5.5,
     dampingRelaxation: 3.5,
     dampingCompression: 5.0,
@@ -673,7 +673,7 @@ const wheelOptions = {
     axleLocal: new CANNON.Vec3(0, 0, 1),
     directionLocal: new CANNON.Vec3(0, -1, 0),
     chassisConnectionPointLocal: new CANNON.Vec3(),
-    maxSuspensionTravel: 0.3,
+    maxSuspensionTravel: 0.2,
     customSlidingRotationalSpeed: -30,
     useCustomSlidingRotationalSpeed: true
 };
@@ -688,8 +688,8 @@ const wheelOptions = {
 vehicle.addToWorld(world);
 
 // Controls
-const MAX_FORCE = 2200;
-const MAX_STEER = 0.55;
+const MAX_FORCE = 5000;
+const MAX_STEER = 0.75;
 const BRAKE_FORCE = 1000000;
 let keysPressed = { w: false, s: false, a: false, d: false, space: false };
 
